@@ -1,0 +1,317 @@
+using System;
+using System.IO;
+
+public class Program
+{
+    public static void Main()
+    {
+        string Users = "Users.txt";
+        string Games = "VGs.txt";
+        Console.WriteLine("Directorio actual: " + Directory.GetCurrentDirectory());
+
+        if (!File.Exists(Users))
+        {
+            Console.WriteLine("Archivo Inexistente");
+            StreamWriter sw = File.CreateText(Users);
+            sw.WriteLine("ID,Gamertag,Balance,Points,Points Limit,PurchasesMade,GamesOwned,Status");
+            Console.WriteLine("Archivo Creado");
+            sw.Close();
+        }
+        String Options = ("Seleccione el numero de la Opcion que desea;\n0.-Alta de usuario\n1.-Baja de usuario\n2.-Cambiar Estado\n3.-Reembolso\n4.-Comprar Videojuegon\n5.-Recargar$\n6.-HistorialdeMovimientos\n7.-Salir\n");
+        bool End = false;
+        while (!End)
+        {
+            Console.WriteLine(Options);
+            string selección = Console.ReadLine();
+            switch (selección)
+            {
+                case "0":
+                    AltaUsuario(Users);
+                    break;
+                case "1":
+                    BajaUsuario(Users);
+                    break;
+                case "2":
+                    //Cambiarestado;
+                    break;
+                case "3":
+                    Reembolsar(Users);
+                    break;
+                case "4":
+                    //ComprarVideojuego;
+                    break;
+                case "5":
+                    Recargar(Users);
+                    break;
+                case "6":
+                    // HistorialdeVideojuego;
+                    break;
+                case "7":
+                    Console.WriteLine("Cerrando Programa");
+                    End = true;
+                    break;
+                default:
+                    Console.WriteLine("Esa Opcion no Existe");
+                    break;
+            }
+        }
+    }
+    public static void AltaUsuario(string Users)
+    {
+        string[] datos = { "ID", "Gamertag", "Balance", "Points", "Points Limit " };// falta PurchasesMade,GamesOwned,Status
+        string[] datosusuario = new string[8];
+        bool Existe = false;
+        for (int i = 0; i < datos.Length; i++)
+        {
+            Console.WriteLine("Escribe" + datos[i]);
+            datosusuario[i] = Console.ReadLine();
+
+            if (!UsuarioExiste(datosusuario[i], Users))
+            {
+
+                datosusuario[5] = "[]";
+                datosusuario[6] = "[]";
+                datosusuario[7] = ("activado");
+                GuardarDatos(Users, datosusuario);
+            }
+            else
+            {
+                Console.WriteLine("Id de usuario ya existente");
+            }
+        }
+
+    }
+    public static void GuardarDatos(string Users, string[] datos)
+    {
+        StreamWriter siguiente = new StreamWriter(Users, true);
+        for (int i = 0; i < datos.Length; i++)
+        {
+
+            siguiente.Write(datos[i] + ",");
+        }
+
+        siguiente.Write("\n");
+        siguiente.Close();
+    }
+    public static bool UsuarioExiste(string datosusuario, string Users)
+    {
+        StreamReader streamReader = File.OpenText(Users);
+        string lectura = streamReader.ReadToEnd();
+        streamReader.Close();
+        string[] lecture = lectura.Split("\n");
+        string[,] registrosxdatos = new string[lecture.Length, 8];
+        bool existe = false;
+        for (int i = 1; i < registrosxdatos.GetLength(0) - 1; i++)
+        {
+            string[] info = lecture[i].Split(",");
+            if (info[0] == datosusuario)
+            {
+                existe = true;
+                break;
+            }
+        }
+        return existe;
+    }
+    public static void BajaUsuario(string Users)
+    {
+        string menu = "\n1-Dar de baja con Id\n2-Regresar";
+        bool finalizar = false;
+        while (!finalizar)
+        {
+            Console.WriteLine(menu);
+            string opcion = Console.ReadLine();
+            switch (opcion)
+            {
+                case "1":
+                    Console.WriteLine("Ingresa el Id de Usuario");
+                    string datosusuario = Console.ReadLine();
+                    if (UsuarioExiste(datosusuario, Users))
+                    {
+                        CambiarEstado(datosusuario, Users);
+                    }
+                    else
+                    {
+                        Console.WriteLine("No existe el usuario con ese Id");
+                    }
+                    break;
+                case "Q":
+                    finalizar = true;
+                    break;
+            }
+        }
+    }
+
+    public static void CambiarEstado(string datosusurio, string Users)
+    {
+        StreamReader sr = File.OpenText(Users);
+        string contenido = sr.ReadToEnd();
+        sr.Close();
+        string[] filas = contenido.Split('\n');
+        string[,] db = new string[filas.Length, 8];
+        for (int i = 0; i < db.GetLength(0) - 1; i++)
+        {
+            string[] columnas = filas[i].Split(",");
+            for (int j = 0; j < db.GetLength(1); j++)
+            {
+                db[i, j] = columnas[j].Trim();
+            }
+        }
+        for (int i = 0; i < db.GetLength(0); i++)
+        {
+            string[] data = filas[i].Split(",");
+            if (data[0] == datosusurio)
+            {
+                int saldo = int.Parse(data[2]);
+                if (saldo > 0)
+                {
+                    Console.WriteLine("El usuario cuenta con " + saldo + " y no se puede dar de baja. Reembolsa su dinero");
+                }
+                else
+                {
+                    db[i, 7] = "Inactivo";
+                    GuardarDatosEnDos(db, Users);
+                    Console.WriteLine("Estatus cambiado para el usuario " + db[i, 0]);
+                    string registroHistorico = "Baja Cuentahabiente ---- ID_Cuentahabiente: " + datosusurio;
+                }
+                break;
+            }
+        }
+    }
+    public static void Reembolsar(string Users)
+    {
+        Console.WriteLine("Id de Usuario");
+        string datosusuario = Console.ReadLine();
+        if (UsuarioExiste(datosusuario, Users))
+        {
+            StreamReader sr = File.OpenText(Users);
+            string contenido = sr.ReadToEnd();
+            sr.Close();
+            string[] filas = contenido.Split('\n');
+            string[,] dos = new string[filas.Length, 8];
+            for (int i = 0; i < dos.GetLength(0) - 1; i++)
+            {
+                string[] columnas = filas[i].Split(",");
+                for (int j = 0; j < dos.GetLength(1); j++)
+                {
+                    dos[i, j] = columnas[j].Trim();
+                }
+            }
+            for (int i = 0; i < dos.GetLength(0); i++)
+            {
+                string[] data = filas[i].Split(",");
+                if (data[0] == datosusuario)
+                {
+                    int saldo = Convert.ToInt32(data[2]);
+                    Console.WriteLine("El usuario tiene " + saldo + " de saldo.\nReembolsar ese dinero?\n1. Si\n2. No");
+                    string respuesta = Console.ReadLine();
+                    if (respuesta == "1")
+                    {
+                        dos[i, 2] = "0";
+                        GuardarDatosEnDos(dos, Users);
+                        Console.WriteLine("Saldo reembolsado del usuario " + dos[i, 0]);
+                    }
+                    break;
+                }
+            }
+        }
+        else
+        {
+            Console.WriteLine("No existe el usuario con ese Id");
+        }
+    }
+    public static void Recargar(string Users)
+    {
+        Console.WriteLine("Id de Usuario");
+        string datosusuario = Console.ReadLine();
+        if (UsuarioExiste(datosusuario, Users))
+        {
+            StreamReader sr = File.OpenText(Users);
+            string contenido = sr.ReadToEnd();
+            sr.Close();
+            string[] filas = contenido.Split('\n');
+            string[,] dos = new string[filas.Length, 8];
+            for (int i = 0; i < dos.GetLength(0) - 1; i++)
+            {
+                string[] columnas = filas[i].Split(",");
+                for (int j = 0; j < dos.GetLength(1); j++)
+                {
+                    dos[i, j] = columnas[j].Trim();
+                }
+            }
+            for (int i = 0; i < dos.GetLength(0); i++)
+            {
+                string[] data = filas[i].Split(",");
+                if (data[0] == datosusuario)
+                {
+                    int saldo = int.Parse(data[2]);
+                    Console.WriteLine("El usuario tiene " + saldo + " de saldo.\nCuanto dinero quieres ?");
+                    string nuevo = Console.ReadLine();
+                    Console.WriteLine("Vas a recargar " + nuevo + "\n La cantidad es correcta?\n1.Si\n2.No");
+                    string respuesta = Console.ReadLine();
+                    if (respuesta == "1")
+                    {
+                        int saldonuevo = saldo + Convert.ToInt32(nuevo);
+                        dos[i, 2] = Convert.ToString(nuevo);
+                        GuardarDatosEnDos(dos, Users);
+                        Console.WriteLine("Se recargo al usuario " + dos[i, 0]);
+                        string registroHistorico = "ID_usuario: " + datosusuario + " ----- Movimiento: Recarga ----- Monto: " + nuevo;
+                    }
+                    break;
+                }
+            }
+        }
+        else
+        {
+            Console.WriteLine("No existe el usuario con ese Id");
+        }
+    }
+    public static void GuardarDatosEnDos(string[,] dos, string Users)
+    {
+        StreamWriter mod = File.CreateText(Users);
+        for (int i = 0; i < dos.GetLength(0) - 1; i++)
+        {
+            for (int j = 0; j < dos.GetLength(1); j++)
+            {
+                if (j == dos.GetLength(1) - 1)
+                {
+                    mod.Write(dos[i, j]);
+                    mod.Write('\n');
+                }
+                else
+                {
+                    mod.Write(dos[i, j]);
+                    mod.Write(',');
+                }
+            }
+        }
+        mod.Close();
+    }
+    public static void ListarJuegos(string Users)
+    {
+        StreamReader sr = File.OpenText(Users);
+        string contenido = sr.ReadToEnd();
+        sr.Close();
+        string[] filas = contenido.Split('\n');
+        string[,] db = new string[filas.Length, 4];
+        for (int i = 0; i < db.GetLength(0) - 1; i++)
+        {
+            string[] columnas = filas[i].Split(",");
+            for (int j = 0; j < db.GetLength(1); j++)
+            {
+                db[i, j] = columnas[j].Trim();
+            }
+        }
+        for (int i = 0; i < db.GetLength(0); i++)
+        {
+            for (int j = 0; j < db.GetLength(1); j++)
+            {
+                Console.Write(db[i, j]);
+                Console.Write(" ");
+            }
+            Console.WriteLine();
+        }
+    }
+}
+
+
+
